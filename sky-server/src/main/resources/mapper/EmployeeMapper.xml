@@ -2,4 +2,40 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.sky.mapper.EmployeeMapper">
+    <!--
+        动态更新员工信息。
+        启用或禁用员工账号时，主要更新 status、update_time、update_user。
+        传入的 Employee 对象中，哪个字段不为 null，就更新哪个字段。
+    -->
+    <update id="update">
+        update employee
+        <set>
+            <if test="username != null">username = #{username},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="sex != null">sex = #{sex},</if>
+            <if test="idNumber != null">id_number = #{idNumber},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!--
+        员工分页查询。
+        name 有值时按员工姓名模糊查询；没有 name 时查询全部员工。
+        PageHelper 会在执行该 SQL 时自动追加分页语句。
+    -->
+    <select id="pageQuery" resultType="com.sky.entity.Employee">
+        select *
+        from employee
+        <where>
+            <if test="name != null and name != ''">
+                and name like concat('%', #{name}, '%')
+            </if>
+        </where>
+        order by create_time desc
+    </select>
 </mapper>
