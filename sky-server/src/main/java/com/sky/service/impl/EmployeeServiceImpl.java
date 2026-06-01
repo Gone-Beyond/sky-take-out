@@ -105,6 +105,7 @@ public class EmployeeServiceImpl implements EmployeeService {
      * @param employeePageQueryDTO
      * @return
      */
+    @Override
     public PageResult pageQuery(EmployeePageQueryDTO employeePageQueryDTO) {
 
         PageHelper.startPage(employeePageQueryDTO.getPage(),
@@ -124,6 +125,7 @@ public class EmployeeServiceImpl implements EmployeeService {
      * @param id     员工 id
      * @return 无返回值
      */
+    @Override
     public void startOrStop(Integer status, Long id) {
         Employee employee = Employee.builder()
                 .id(id)
@@ -133,6 +135,39 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build();
 
         employeeMapper.update(employee);
+    }
+
+
+    /**
+     * 根据id查询员工
+     *
+     * @param id
+     * @return
+     */
+    @Override
+    public Employee getById(Long id) {
+
+        Employee employee = employeeMapper.getById(id);
+
+        return employee;
+
+    }
+
+
+    /**
+     * 修改员工信息
+     * @param employeeDTO
+     */
+    @Override
+    public void update(EmployeeDTO employeeDTO) {
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO, employee);
+
+        employee.setUpdateTime(LocalDateTime.now());
+        employee.setUpdateUser(BaseContext.getCurrentId());
+
+        employeeMapper.update(employee);
+
     }
 
 
