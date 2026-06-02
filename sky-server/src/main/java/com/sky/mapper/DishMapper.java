@@ -1,7 +1,12 @@
 package com.sky.mapper;
 
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
+import com.sky.annotation.AutoFill;
+import com.sky.entity.Dish;
+import com.sky.entity.DishFlavor;
+import com.sky.enumeration.OperationType;
+import org.apache.ibatis.annotations.*;
+
+import java.util.List;
 
 @Mapper
 public interface DishMapper {
@@ -14,4 +19,23 @@ public interface DishMapper {
      */
     @Select("select count(id) from dish where category_id = #{categoryId}")
     Integer countByCategoryId(Long categoryId);
+
+    /**
+     * 插入菜品主表
+     *
+     * @param dish
+     */
+    @AutoFill(OperationType.INSERT)
+    @Insert("insert into dish (name, category_id, price, image, description, status, create_time, update_time, create_user, update_user) " +
+            "values (#{name}, #{categoryId}, #{price}, #{image}, #{description}, #{status}, #{createTime}, #{updateTime}, #{createUser}, #{updateUser})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    void insert(Dish dish);
+
+
+    /**
+     * 批量插入口味表
+     *
+     * @param flavors
+     */
+    void insertBatch(@Param("flavors") List<DishFlavor> flavors);
 }
