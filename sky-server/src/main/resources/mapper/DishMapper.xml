@@ -32,4 +32,32 @@
         order by d.create_time desc
     </select>
 
+    <!-- Query dishes by ids -->
+    <select id="listByIds" resultType="com.sky.entity.Dish">
+        select *
+        from dish
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <!-- Delete dishes by ids -->
+    <delete id="deleteByIds">
+        delete from dish
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- Delete dish flavors by dish ids -->
+    <delete id="deleteFlavorByDishIds">
+        delete from dish_flavor
+        where dish_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
 </mapper>

@@ -49,4 +49,26 @@ public interface DishMapper {
      * @return
      */
     Page<DishVO> pageQuery(DishPageQueryDTO dishPageQueryDTO);
+
+    /**
+     * 根据菜品id集合查询菜品
+     *
+     * @param ids 菜品id集合
+     * @return 菜品集合
+     */
+    List<Dish> listByIds(@Param("ids") List<Long> ids);
+
+    /**
+     * 根据菜品id集合批量删除菜品
+     *
+     * @param ids 菜品id集合
+     */
+    void deleteByIds(@Param("ids") List<Long> ids);
+
+    /**
+     * 根据菜品id集合批量删除菜品口味
+     *
+     * @param ids 菜品id集合
+     */
+    void deleteFlavorByDishIds(@Param("ids") List<Long> ids);
 }
