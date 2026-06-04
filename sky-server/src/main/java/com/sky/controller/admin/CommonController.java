@@ -22,8 +22,12 @@ import java.util.UUID;
 public class CommonController {
 
 
+    private final AliOssUtil aliOssUtil;
+
     @Autowired
-    private AliOssUtil aliOssUtil;
+    public CommonController(AliOssUtil aliOssUtil) {
+        this.aliOssUtil = aliOssUtil;
+    }
 
     /**
      * 文件上传

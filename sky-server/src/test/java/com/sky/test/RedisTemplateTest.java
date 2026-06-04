@@ -12,8 +12,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 @SpringBootTest(classes = SkyApplication.class)
 public class RedisTemplateTest {
 
+    private final RedisTemplate<String, Object> redisTemplate;
+
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+    public RedisTemplateTest(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
+    }
 
     @Test
     public void testStringOperations() {

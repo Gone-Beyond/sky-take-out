@@ -29,10 +29,14 @@ import java.util.List;
 @Slf4j
 public class DishServiceImpl implements DishService {
 
+    private final DishMapper dishMapper;
+    private final SetmealMapper setmealMapper;
+
     @Autowired
-    private DishMapper dishMapper;
-    @Autowired
-    private SetmealMapper setmealMapper;
+    public DishServiceImpl(DishMapper dishMapper, SetmealMapper setmealMapper) {
+        this.dishMapper = dishMapper;
+        this.setmealMapper = setmealMapper;
+    }
 
     /**
      * 新增菜品和对应的口味

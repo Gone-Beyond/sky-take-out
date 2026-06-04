@@ -26,8 +26,12 @@ import java.util.List;
 @Service
 public class EmployeeServiceImpl implements EmployeeService {
 
+    private final EmployeeMapper employeeMapper;
+
     @Autowired
-    private EmployeeMapper employeeMapper;
+    public EmployeeServiceImpl(EmployeeMapper employeeMapper) {
+        this.employeeMapper = employeeMapper;
+    }
 
     /**
      * 员工登录

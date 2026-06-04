@@ -23,8 +23,12 @@ import java.util.List;
 @Slf4j
 public class DishController {
 
+    private final DishService dishService;
+
     @Autowired
-    private DishService dishService;
+    public DishController(DishService dishService) {
+        this.dishService = dishService;
+    }
 
     /**
      * 新增菜品
