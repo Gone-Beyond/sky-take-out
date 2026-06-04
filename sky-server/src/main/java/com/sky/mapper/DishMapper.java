@@ -2,6 +2,8 @@ package com.sky.mapper;
 
 import com.github.pagehelper.Page;
 import com.sky.annotation.AutoFill;
+import com.sky.dto.DishDTO;
+import com.sky.dto.DishFlavorDTO;
 import com.sky.dto.DishPageQueryDTO;
 import com.sky.entity.Dish;
 import com.sky.entity.DishFlavor;
@@ -71,4 +73,40 @@ public interface DishMapper {
      * @param ids 菜品id集合
      */
     void deleteFlavorByDishIds(@Param("ids") List<Long> ids);
+
+    /**
+     * 根据菜品id查询菜品信息
+     *
+     * @param id
+     * @return
+     */
+    @Select("select * from dish where id = #{id}")
+    Dish listById(Long id);
+
+    /**
+     * 根据菜品 id 查询该菜品关联的所有口味信息
+     *
+     * @param dishId 菜品 id
+     * @return 菜品口味集合
+     */
+    @Select("select * from dish_flavor where dish_id = #{dishId}")
+    List<DishFlavor> listDishFlavorsByDishId(Long dishId);
+
+    /**
+     * 修改菜品信息
+     *
+     * @param dish
+     */
+    @AutoFill(OperationType.UPDATE)
+    void updateDish(Dish dish);
+
+
+
+    /**
+     * 根据菜品 id 删除该菜品关联的所有口味数据
+     *
+     * @param dishId 菜品 id
+     */
+    @Delete("delete from dish_flavor where dish_id = #{dishId}")
+    void deleteFlavorByDishId(Long dishId);
 }

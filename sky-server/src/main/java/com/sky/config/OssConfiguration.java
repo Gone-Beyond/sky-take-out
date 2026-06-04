@@ -1,6 +1,7 @@
 package com.sky.config;
 
 
+import com.sky.controller.admin.EmployeeController;
 import com.sky.properties.AliOssProperties;
 import com.sky.utils.AliOssUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,8 @@ public class OssConfiguration {
                 aliOssProperties.getAccessKeySecret(),
                 aliOssProperties.getBucketName());
 
+
     }
+
 
 }

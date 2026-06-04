@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+﻿<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.sky.mapper.DishMapper">
 
-    <!--批量插入口味表-->
+    <!-- 批量插入口味表 -->
     <insert id="insertBatch">
         insert into dish_flavor (dish_id, name, value)
         values
@@ -13,7 +13,24 @@
         </foreach>
     </insert>
 
-    <!--菜品分页查询-->
+    <!-- 修改菜品信息 -->
+    <update id="updateDish">
+        update dish
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="image != null">image = #{image},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+        </set>
+        where id = #{id}
+    </update>
+
+
+    <!-- 菜品分页查询 -->
     <select id="pageQuery" resultType="com.sky.vo.DishVO">
         select d.*, c.name as category_name
         from dish d
@@ -32,7 +49,7 @@
         order by d.create_time desc
     </select>
 
-    <!-- Query dishes by ids -->
+    <!-- 根据菜品id集合查询菜品 -->
     <select id="listByIds" resultType="com.sky.entity.Dish">
         select *
         from dish
@@ -42,7 +59,7 @@
         </foreach>
     </select>
 
-    <!-- Delete dishes by ids -->
+    <!-- 根据菜品id集合批量删除菜品 -->
     <delete id="deleteByIds">
         delete from dish
         where id in
@@ -51,7 +68,7 @@
         </foreach>
     </delete>
 
-    <!-- Delete dish flavors by dish ids -->
+    <!-- 根据菜品id集合批量删除菜品口味 -->
     <delete id="deleteFlavorByDishIds">
         delete from dish_flavor
         where dish_id in
