@@ -19,7 +19,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/admin/category")
-@Api(tags = "分类相关接口")
+@Api(tags = "分类管理")
 @Slf4j
 public class CategoryController {
 
@@ -51,7 +51,7 @@ public class CategoryController {
      * @return
      */
     @GetMapping("/page")
-    @ApiOperation("分类分页查询")
+    @ApiOperation("分页查询分类")
     public Result<PageResult> page(CategoryPageQueryDTO categoryPageQueryDTO) {
         log.info("分页查询：{}", categoryPageQueryDTO);
         PageResult pageResult = categoryService.pageQuery(categoryPageQueryDTO);
@@ -93,7 +93,7 @@ public class CategoryController {
      * @return
      */
     @PostMapping("/status/{status}")
-    @ApiOperation("启用禁用分类")
+    @ApiOperation("启用或禁用分类")
     public Result<String> startOrStop(@PathVariable("status") Integer status, Long id) {
         categoryService.startOrStop(status, id);
         return Result.success();
@@ -106,7 +106,7 @@ public class CategoryController {
      * @return
      */
     @GetMapping("/list")
-    @ApiOperation("根据类型查询分类")
+    @ApiOperation("根据类型查询分类列表")
     public Result<List<Category>> list(Integer type) {
         List<Category> list = categoryService.list(type);
         return Result.success(list);

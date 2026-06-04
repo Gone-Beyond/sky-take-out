@@ -1,11 +1,13 @@
 package com.sky.config;
 
 import com.sky.interceptor.JwtTokenAdminInterceptor;
+import com.sky.interceptor.JwtTokenUserInterceptor;
 import com.sky.json.JacksonObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -17,7 +19,10 @@ import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger.web.SwaggerResource;
+import springfox.documentation.swagger.web.SwaggerResourcesProvider;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -28,10 +33,13 @@ import java.util.List;
 public class WebMvcConfiguration extends WebMvcConfigurationSupport {
 
     private final JwtTokenAdminInterceptor jwtTokenAdminInterceptor;
+    private final JwtTokenUserInterceptor jwtTokenUserInterceptor;
 
     @Autowired
-    public WebMvcConfiguration(JwtTokenAdminInterceptor jwtTokenAdminInterceptor) {
+    public WebMvcConfiguration(JwtTokenAdminInterceptor jwtTokenAdminInterceptor,
+                               JwtTokenUserInterceptor jwtTokenUserInterceptor) {
         this.jwtTokenAdminInterceptor = jwtTokenAdminInterceptor;
+        this.jwtTokenUserInterceptor = jwtTokenUserInterceptor;
     }
 
     /**
@@ -44,26 +52,96 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
         registry.addInterceptor(jwtTokenAdminInterceptor)
                 .addPathPatterns("/admin/**")
                 .excludePathPatterns("/admin/employee/login");
+
+        registry.addInterceptor(jwtTokenUserInterceptor)
+                .addPathPatterns("/user/**")
+                .excludePathPatterns(
+                        "/user/user/login",
+                        "/user/shop/status"
+                );
     }
 
     /**
-     * 通过knife4j生成接口文档
+     * 管理端接口文档
+     *
      * @return
      */
     @Bean
-    public Docket docket() {
-        ApiInfo apiInfo = new ApiInfoBuilder()
-                .title("苍穹外卖项目接口文档")
-                .version("2.0")
-                .description("苍穹外卖项目接口文档")
-                .build();
-        Docket docket = new Docket(DocumentationType.SWAGGER_2)
-                .apiInfo(apiInfo)
+    public Docket adminApi() {
+        return createDocket(
+                "admin",
+                "com.sky.controller.admin",
+                "苍穹外卖管理端接口文档"
+        );
+    }
+
+    /**
+     * 用户端接口文档
+     *
+     * @return
+     */
+    @Bean
+    public Docket userApi() {
+        return createDocket(
+                "user",
+                "com.sky.controller.user",
+                "苍穹外卖用户端接口文档"
+        );
+    }
+
+    /**
+     * 创建 Knife4j 接口文档分组
+     *
+     * @param groupName  文档分组名称
+     * @param basePackage 扫描的 Controller 包
+     * @param description 文档描述
+     * @return Docket
+     */
+    private Docket createDocket(String groupName, String basePackage, String description) {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .groupName(groupName)
+                .enable(true)
+                .apiInfo(createApiInfo(description))
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("com.sky.controller"))
+                .apis(RequestHandlerSelectors.basePackage(basePackage))
                 .paths(PathSelectors.any())
                 .build();
-        return docket;
+    }
+
+    /**
+     * 创建接口文档基本信息
+     *
+     * @param description 文档描述
+     * @return ApiInfo
+     */
+    private ApiInfo createApiInfo(String description) {
+        return new ApiInfoBuilder()
+                .title("苍穹外卖项目接口文档")
+                .version("2.0")
+                .description(description)
+                .build();
+    }
+
+    /**
+     * 明确提供 Knife4j 页面可选择的接口文档分组
+     *
+     * @return Swagger 文档资源
+     */
+    @Bean
+    @Primary
+    public SwaggerResourcesProvider swaggerResourcesProvider() {
+        return () -> Arrays.asList(
+                createSwaggerResource("管理端接口", "admin"),
+                createSwaggerResource("用户端接口", "user")
+        );
+    }
+
+    private SwaggerResource createSwaggerResource(String displayName, String groupName) {
+        SwaggerResource resource = new SwaggerResource();
+        resource.setName(displayName);
+        resource.setLocation("/v2/api-docs?group=" + groupName);
+        resource.setSwaggerVersion("2.0");
+        return resource;
     }
 
     /**

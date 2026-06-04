@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController("adminShopController")
 @Slf4j
 @RequestMapping("/admin/shop")
-@Api(tags = "店铺相关接口")
+@Api(tags = "店铺管理")
 public class ShopController {
 
     // 注入 RedisTemplate
@@ -29,7 +29,7 @@ public class ShopController {
      * @param status
      * @return
      */
-    @ApiOperation("管理端设置店铺营业状态")
+    @ApiOperation("设置店铺营业状态")
     @PutMapping("/{status}")
     public Result<String> setStatus(@PathVariable Integer status) {
         // 记录状态日志
@@ -51,7 +51,7 @@ public class ShopController {
      *
      * @return
      */
-    @ApiOperation("管理端查询营业状态")
+    @ApiOperation("查询店铺营业状态")
     @GetMapping("/status")
     public Result<Integer> getStatus() {
         log.info("管理端查询营业状态");

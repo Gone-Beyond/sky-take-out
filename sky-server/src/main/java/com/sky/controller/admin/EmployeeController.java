@@ -27,7 +27,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/admin/employee")
 @Slf4j
-@Api(tags = "员工相关接口")
+@Api(tags = "员工管理")
 public class EmployeeController {
 
     private final EmployeeService employeeService;
@@ -105,7 +105,7 @@ public class EmployeeController {
      * @param employeePageQueryDTO
      * @return
      */
-    @ApiOperation("员工分页查询")
+    @ApiOperation("分页查询员工")
     @GetMapping("/page")
     public Result<PageResult> page(EmployeePageQueryDTO  employeePageQueryDTO) {
         log.info("员工分页查询 employeePageQueryDTO: {}", employeePageQueryDTO);
@@ -143,7 +143,7 @@ public class EmployeeController {
      * @param id
      * @return
      */
-    @ApiOperation("根据id查询员工")
+    @ApiOperation("根据 ID 查询员工")
     @GetMapping("/{id}")
     public Result<Employee> getById(@PathVariable Long id) {
         log.info("根据id查询员工: id: {}", id);
@@ -162,7 +162,7 @@ public class EmployeeController {
      * @return
      */
     @PutMapping
-    @ApiOperation("修改员工信息")
+    @ApiOperation("修改员工")
     public Result update(@RequestBody EmployeeDTO employeeDTO) {
         log.info("修改员工信息 employeeDTO: {}", employeeDTO);
 

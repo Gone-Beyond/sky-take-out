@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController("userShopController")
 @RequestMapping("/user/shop")
-@Api(tags = "用户端店铺相关接口")
+@Api(tags = "店铺信息")
 @Slf4j
 public class ShopController {
 
@@ -32,7 +32,7 @@ public class ShopController {
      * @return 店铺营业状态：1 为营业，0 为打烊
      */
     @GetMapping("/status")
-    @ApiOperation("用户端查询店铺营业状态")
+    @ApiOperation("查询店铺营业状态")
     public Result<Integer> getStatus() {
         log.info("用户端查询店铺营业状态");
 

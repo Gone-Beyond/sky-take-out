@@ -19,7 +19,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/admin/dish")
-@Api(tags = "菜品相关接口")
+@Api(tags = "菜品管理")
 @Slf4j
 public class DishController {
 
@@ -52,7 +52,7 @@ public class DishController {
      * @return
      */
     @GetMapping("/page")
-    @ApiOperation("菜品分页查询")
+    @ApiOperation("分页查询菜品")
     public Result<PageResult> page(DishPageQueryDTO pageQueryDTO) {
         log.info("菜品分页查询 pageQueryDTO: {}",pageQueryDTO);
 
@@ -69,7 +69,7 @@ public class DishController {
      * @return
      */
     @DeleteMapping
-    @ApiOperation("删除菜品")
+    @ApiOperation("批量删除菜品")
     public Result<String> delete(@RequestParam List<Long> ids) {
         log.info("删除菜品：{}", ids);
         dishService.deleteBatch(ids);
@@ -82,7 +82,7 @@ public class DishController {
      * @param id
      * @return
      */
-    @ApiOperation("根据id查询菜品")
+    @ApiOperation("根据 ID 查询菜品")
     @GetMapping("/{id}")
     public Result<DishVO> selectById(@PathVariable Long id) {
         log.info("根据id查询菜品");
@@ -99,7 +99,7 @@ public class DishController {
      * @return
      */
     @PutMapping
-    @ApiOperation("修改菜品信息")
+    @ApiOperation("修改菜品")
     public Result<String> update(@RequestBody DishDTO dishDTO) {
         log.info("修改菜品信息");
 

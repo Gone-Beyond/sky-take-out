@@ -16,7 +16,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 @Slf4j
-@Api(tags = "通用接口")
+@Api(tags = "文件管理")
 @RestController
 @RequestMapping("/admin/common")
 public class CommonController {
@@ -36,7 +36,7 @@ public class CommonController {
      * @return
      */
     @PostMapping("/upload")
-    @ApiOperation("文件上传")
+    @ApiOperation("上传文件")
     public Result<String> upload(MultipartFile file) throws IOException {
         log.info("文件上传: {}", file);
 
