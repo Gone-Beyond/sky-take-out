@@ -77,6 +77,17 @@
         </foreach>
     </select>
 
+    <!--    根据菜品id集合 ids 查询该菜品关联的所有口味信息-->
+    <select id="listDishFlavorsByDishIds" resultType="com.sky.entity.DishFlavor">
+        select *
+        from dish_flavor
+        where dish_id in
+          <foreach collection="dishIds" item="dishId" open="(" close=")" separator=",">
+              #{dishId}
+          </foreach>
+
+    </select>
+
     <!-- 根据菜品id集合批量删除菜品 -->
     <delete id="deleteByIds">
         delete from dish

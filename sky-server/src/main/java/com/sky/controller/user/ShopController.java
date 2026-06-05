@@ -38,6 +38,7 @@ public class ShopController {
 
         Integer value = (Integer) redisTemplate.opsForValue().get(RedisKeyConstant.SHOP_STATUS);
         Integer status = value == null ? StatusConstant.DISABLE : value;
+        log.info("user shop status redis read, key={}, rawValue={}, resultStatus={}", RedisKeyConstant.SHOP_STATUS, value, status);
 
         return Result.success(status);
     }

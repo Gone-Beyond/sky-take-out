@@ -42,6 +42,7 @@ public class ShopController {
 
         // 将店铺状态写入 Redis
         redisTemplate.opsForValue().set(RedisKeyConstant.SHOP_STATUS, status);
+        log.info("shop status redis write success, key={}, status={}", RedisKeyConstant.SHOP_STATUS, status);
 
         return Result.success();
     }
@@ -58,6 +59,7 @@ public class ShopController {
 
         Integer value = (Integer) redisTemplate.opsForValue().get(RedisKeyConstant.SHOP_STATUS);
         Integer status = value == null ? StatusConstant.DISABLE : value;
+        log.info("admin shop status redis read, key={}, rawValue={}, resultStatus={}", RedisKeyConstant.SHOP_STATUS, value, status);
 
         return Result.success(status);
 

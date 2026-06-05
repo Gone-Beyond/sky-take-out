@@ -41,20 +41,29 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public User wxLogin(UserLoginDTO userLoginDTO) {
+        log.info("wxLogin start, codePresent={}", userLoginDTO != null && userLoginDTO.getCode() != null && !userLoginDTO.getCode().isEmpty());
+
         String openid = getOpenid(userLoginDTO.getCode());
+        log.info("wxLogin get openid result, openid={}", openid);
 
         if (openid == null) {
+            log.warn("wxLogin failed, openid is null");
             throw new LoginFailedException(MessageConstant.LOGIN_FAILED);
         }
 
+        log.info("wxLogin query user by openid, openid={}", openid);
         User user = userMapper.getByOpenid(openid);
 
         if (user == null) {
+            log.info("wxLogin user not found, create new user, openid={}", openid);
             user = User.builder()
                     .openid(openid)
                     .createTime(LocalDateTime.now())
                     .build();
             userMapper.insert(user);
+            log.info("wxLogin new user created, userId={}, openid={}", user.getId(), openid);
+        } else {
+            log.info("wxLogin user found, userId={}, openid={}", user.getId(), openid);
         }
 
         return user;
@@ -62,6 +71,8 @@ public class UserServiceImpl implements UserService {
 
 
     private String getOpenid(String code) {
+        log.info("wxLogin request jscode2session, appid={}, codePresent={}", weChatProperties.getAppid(), code != null && !code.isEmpty());
+
         Map<String, String> paramMap = new HashMap<>();
         paramMap.put("appid", weChatProperties.getAppid());
         paramMap.put("secret", weChatProperties.getSecret());
@@ -69,6 +80,8 @@ public class UserServiceImpl implements UserService {
         paramMap.put("grant_type", "authorization_code");
 
         String json = HttpClientUtil.doGet(WX_LOGIN, paramMap);
+        log.info("wxLogin jscode2session response={}", json);
+
         if (json == null || json.isEmpty()) {
             log.warn("微信登录接口未返回数据");
             return null;

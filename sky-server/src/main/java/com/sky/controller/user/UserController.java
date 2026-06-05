@@ -41,8 +41,10 @@ public class UserController {
         @ApiOperation("微信登录")
         public Result<UserLoginVO> login(@RequestBody UserLoginDTO userLoginDTO) {
             log.info("微信用户登录");
+            log.info("user login request, codePresent={}", userLoginDTO != null && userLoginDTO.getCode() != null && !userLoginDTO.getCode().isEmpty());
 
             User user = userService.wxLogin(userLoginDTO);
+            log.info("user login success from service, userId={}, openid={}", user.getId(), user.getOpenid());
 
         Map<String, Object> claims = new HashMap<>();
         claims.put(JwtClaimsConstant.USER_ID, user.getId());
@@ -50,6 +52,7 @@ public class UserController {
                 jwtProperties.getUserSecretKey(),
                 jwtProperties.getUserTtl(),
                 claims);
+        log.info("user login jwt created, userId={}, ttl={}", user.getId(), jwtProperties.getUserTtl());
 
         UserLoginVO userLoginVO = UserLoginVO.builder()
                 .id(user.getId())
