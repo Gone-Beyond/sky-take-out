@@ -100,7 +100,13 @@ public interface DishMapper {
     @AutoFill(OperationType.UPDATE)
     void updateDish(Dish dish);
 
-
+    /**
+     * 动态条件查询菜品
+     *
+     * @param dish 查询条件
+     * @return 菜品列表
+     */
+    List<Dish> list(Dish dish);
 
     /**
      * 根据菜品 id 删除该菜品关联的所有口味数据
