@@ -41,18 +41,15 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
      */
     @Override
     public void addShoppingCart(ShoppingCartDTO shoppingCartDTO) {
-
-        // 用户端接口需要从 JWT 拦截器写入的 ThreadLocal 中取得当前登录用户 id。
         Long userId = BaseContext.getCurrentId();
         log.info("开始处理添加购物车，userId={}，参数={}", userId, shoppingCartDTO);
 
-        // 先把前端传入的 DTO 转成实体查询条件，再补上当前用户 id。
+        // 前端只传关键 id 和口味，先转换成购物车实体作为查重条件。
         ShoppingCart shoppingCart = new ShoppingCart();
         BeanUtils.copyProperties(shoppingCartDTO, shoppingCart);
         shoppingCart.setUserId(userId);
 
-        // 查询当前用户购物车中是否已经存在同一菜品/套餐。
-        // 菜品会按 dishId + dishFlavor 区分，套餐按 setmealId 区分。
+        // 菜品按 dishId + dishFlavor 查重；套餐按 setmealId 查重。
         List<ShoppingCart> shoppingCartList = shoppingCartMapper.list(shoppingCart);
 
         if (shoppingCartList != null && !shoppingCartList.isEmpty()) {
@@ -67,7 +64,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         Long setmealId = shoppingCart.getSetmealId();
 
         if (dishId != null) {
-            // 添加菜品：前端只传 dishId，购物车表展示需要的名称、图片、价格由后端补齐。
+            // 添加菜品时，后端从 dish 表补齐购物车展示所需的冗余字段。
             Dish dish = dishMapper.listById(dishId);
             if (dish == null) {
                 throw new ShoppingCartBusinessException("菜品不存在");
@@ -77,7 +74,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             shoppingCart.setAmount(dish.getPrice());
             log.info("添加菜品到购物车，dishId={}，name={}", dishId, dish.getName());
         } else {
-            // 添加套餐：前端只传 setmealId，同样由后端补齐购物车冗余字段。
+            // 添加套餐时，后端从 setmeal 表补齐购物车展示所需的冗余字段。
             Setmeal setmeal = setmealMapper.getById(setmealId);
             if (setmeal == null) {
                 throw new ShoppingCartBusinessException("套餐不存在");
@@ -88,10 +85,40 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             log.info("添加套餐到购物车，setmealId={}，name={}", setmealId, setmeal.getName());
         }
 
-        // 新商品第一次加入购物车，数量固定为 1，并记录创建时间。
+        // 第一次加入购物车时数量固定为 1。
         shoppingCart.setNumber(1);
         shoppingCart.setCreateTime(LocalDateTime.now());
         shoppingCartMapper.insert(shoppingCart);
         log.info("新增购物车记录成功，userId={}，dishId={}，setmealId={}", userId, dishId, setmealId);
+    }
+
+    /**
+     * 查看当前登录用户的购物车列表。
+     */
+    @Override
+    public List<ShoppingCart> showShoppingCart() {
+        Long userId = BaseContext.getCurrentId();
+        log.info("开始查看购物车，userId={}", userId);
+
+        ShoppingCart shoppingCart = ShoppingCart.builder()
+                .userId(userId)
+                .build();
+
+        List<ShoppingCart> list = shoppingCartMapper.list(shoppingCart);
+        log.info("查看购物车完成，userId={}，数量={}", userId, list.size());
+        return list;
+    }
+
+    /**
+     * 清空当前登录用户的购物车。
+     */
+    @Override
+    public void cleanShoppingCart() {
+        Long userId = BaseContext.getCurrentId();
+        log.info("开始清空购物车，userId={}", userId);
+
+        shoppingCartMapper.deleteByUserId(userId);
+
+        log.info("清空购物车完成，userId={}", userId);
     }
 }

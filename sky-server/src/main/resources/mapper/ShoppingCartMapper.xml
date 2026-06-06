@@ -13,8 +13,8 @@
 
     <!--
         动态条件查询购物车。
-        添加购物车查重时会传入 userId，并按 dishId 或 setmealId 区分菜品/套餐。
-        菜品还要区分 dishFlavor：同一个菜品不同口味应该是不同购物车记录。
+        添加购物车查重时传入 userId，并按 dishId 或 setmealId 区分菜品/套餐。
+        查看购物车列表时只传 userId，返回当前用户全部购物车记录。
     -->
     <select id="list" parameterType="com.sky.entity.ShoppingCart" resultType="com.sky.entity.ShoppingCart">
         select *

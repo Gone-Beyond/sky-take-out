@@ -1,6 +1,7 @@
 package com.sky.mapper;
 
 import com.sky.entity.ShoppingCart;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Update;
 
@@ -12,7 +13,7 @@ public interface ShoppingCartMapper {
     /**
      * 动态条件查询购物车数据。
      *
-     * 添加购物车时用于判断“当前用户是否已经添加过同一个菜品/套餐”。
+     * 添加购物车时用于查重，查看购物车时用于按 userId 查询当前用户全部购物车记录。
      */
     List<ShoppingCart> list(ShoppingCart shoppingCart);
 
@@ -26,4 +27,10 @@ public interface ShoppingCartMapper {
      * 新增购物车记录。
      */
     void insert(ShoppingCart shoppingCart);
+
+    /**
+     * 根据用户 id 清空购物车。
+     */
+    @Delete("delete from shopping_cart where user_id = #{userId}")
+    void deleteByUserId(Long userId);
 }
