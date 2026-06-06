@@ -17,6 +17,7 @@ public interface ShoppingCartMapper {
      */
     List<ShoppingCart> list(ShoppingCart shoppingCart);
 
+
     /**
      * 根据购物车 id 更新商品数量。
      */

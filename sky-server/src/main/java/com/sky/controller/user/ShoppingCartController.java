@@ -31,6 +31,7 @@ public class ShoppingCartController {
         this.shoppingCartService = shoppingCartService;
     }
 
+
     /**
      * 添加商品到购物车。
      *
@@ -46,6 +47,7 @@ public class ShoppingCartController {
         log.info("用户端添加购物车成功");
         return Result.success();
     }
+
 
     /**
      * 查看当前登录用户的购物车列表。

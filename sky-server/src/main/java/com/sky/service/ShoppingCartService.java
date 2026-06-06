@@ -14,6 +14,7 @@ public interface ShoppingCartService {
      */
     void addShoppingCart(ShoppingCartDTO shoppingCartDTO);
 
+
     /**
      * 查看当前登录用户的购物车列表。
      */

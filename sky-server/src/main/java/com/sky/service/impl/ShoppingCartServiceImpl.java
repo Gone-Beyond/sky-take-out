@@ -49,6 +49,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         BeanUtils.copyProperties(shoppingCartDTO, shoppingCart);
         shoppingCart.setUserId(userId);
 
+
         // 菜品按 dishId + dishFlavor 查重；套餐按 setmealId 查重。
         List<ShoppingCart> shoppingCartList = shoppingCartMapper.list(shoppingCart);
 
