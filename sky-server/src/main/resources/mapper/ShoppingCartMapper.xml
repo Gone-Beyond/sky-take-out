@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.sky.mapper.ShoppingCartMapper">
+
+    <!-- 新增购物车记录：name/image/amount 是冗余字段，便于购物车列表直接展示 -->
+    <insert id="insert" parameterType="com.sky.entity.ShoppingCart">
+        insert into shopping_cart
+            (name, image, user_id, dish_id, setmeal_id, dish_flavor, number, amount, create_time)
+        values
+            (#{name}, #{image}, #{userId}, #{dishId}, #{setmealId}, #{dishFlavor}, #{number}, #{amount}, #{createTime})
+    </insert>
+
+    <!--
+        动态条件查询购物车。
+        添加购物车查重时会传入 userId，并按 dishId 或 setmealId 区分菜品/套餐。
+        菜品还要区分 dishFlavor：同一个菜品不同口味应该是不同购物车记录。
+    -->
+    <select id="list" parameterType="com.sky.entity.ShoppingCart" resultType="com.sky.entity.ShoppingCart">
+        select *
+        from shopping_cart
+        <where>
+            <if test="userId != null">
+                and user_id = #{userId}
+            </if>
+            <if test="dishId != null">
+                and dish_id = #{dishId}
+            </if>
+            <if test="setmealId != null">
+                and setmeal_id = #{setmealId}
+            </if>
+            <if test="dishId != null">
+                <choose>
+                    <when test="dishFlavor != null and dishFlavor != ''">
+                        and dish_flavor = #{dishFlavor}
+                    </when>
+                    <otherwise>
+                        and (dish_flavor is null or dish_flavor = '')
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+</mapper>
