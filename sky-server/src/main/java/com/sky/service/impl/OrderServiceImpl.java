@@ -1,8 +1,14 @@
 package com.sky.service.impl;
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
 import com.sky.context.BaseContext;
+import com.sky.dto.OrdersCancelDTO;
+import com.sky.dto.OrdersConfirmDTO;
+import com.sky.dto.OrdersPageQueryDTO;
 import com.sky.dto.OrdersPaymentDTO;
+import com.sky.dto.OrdersRejectionDTO;
 import com.sky.dto.OrdersSubmitDTO;
 import com.sky.entity.AddressBook;
 import com.sky.entity.OrderDetail;
@@ -15,11 +21,16 @@ import com.sky.mapper.OrderDetailMapper;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.ShoppingCartMapper;
 import com.sky.mapper.UserMapper;
+import com.sky.result.PageResult;
 import com.sky.service.OrderService;
 import com.sky.utils.WeChatPayUtil;
 import com.sky.vo.OrderPaymentVO;
+import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
+import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,19 +53,16 @@ public class OrderServiceImpl implements OrderService {
     private final AddressBookMapper addressBookMapper;
     private final UserMapper userMapper;
     private final WeChatPayUtil weChatPayUtil;
+    private final WebSocketServer webSocketServer;
 
-    public OrderServiceImpl(OrderMapper orderMapper,
-                            OrderDetailMapper orderDetailMapper,
-                            ShoppingCartMapper shoppingCartMapper,
-                            AddressBookMapper addressBookMapper,
-                            UserMapper userMapper,
-                            WeChatPayUtil weChatPayUtil) {
+    public OrderServiceImpl(OrderMapper orderMapper, OrderDetailMapper orderDetailMapper, ShoppingCartMapper shoppingCartMapper, AddressBookMapper addressBookMapper, UserMapper userMapper, WeChatPayUtil weChatPayUtil, WebSocketServer webSocketServer) {
         this.orderMapper = orderMapper;
         this.orderDetailMapper = orderDetailMapper;
         this.shoppingCartMapper = shoppingCartMapper;
         this.addressBookMapper = addressBookMapper;
         this.userMapper = userMapper;
         this.weChatPayUtil = weChatPayUtil;
+        this.webSocketServer = webSocketServer;
     }
 
     /**
@@ -219,11 +227,145 @@ public class OrderServiceImpl implements OrderService {
         orderMapper.update(orders);
 
         log.info("订单支付状态更新完成，orderId={}，orderNumber={}", ordersDB.getId(), outTradeNo);
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("type", 1);
+        jsonObject.put("orderId", ordersDB.getId());
+        jsonObject.put("content", "订单号：" + outTradeNo);
+
+        webSocketServer.sendToAllClient(jsonObject.toJSONString());
+        
+
     }
 
     /**
      * 计算购物车商品金额，不包含餐盒费和配送费。
      */
+    @Override
+    public PageResult conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO) {
+        log.info("管理端订单条件分页查询：{}", ordersPageQueryDTO);
+
+        PageHelper.startPage(ordersPageQueryDTO.getPage(), ordersPageQueryDTO.getPageSize());
+        Page<OrderVO> page = orderMapper.pageQuery(ordersPageQueryDTO);
+
+        for (OrderVO orderVO : page.getResult()) {
+            List<OrderDetail> orderDetailList = orderDetailMapper.listByOrderId(orderVO.getId());
+            orderVO.setOrderDishes(buildOrderDishes(orderDetailList));
+        }
+
+        return new PageResult(page.getTotal(), page.getResult());
+    }
+
+    @Override
+    public OrderVO details(Long id) {
+        Orders orders = orderMapper.getById(id);
+        if (orders == null) {
+            throw new OrderBusinessException("订单不存在");
+        }
+
+        List<OrderDetail> orderDetailList = orderDetailMapper.listByOrderId(id);
+        OrderVO orderVO = new OrderVO();
+        BeanUtils.copyProperties(orders, orderVO);
+        orderVO.setOrderDetailList(orderDetailList);
+        orderVO.setOrderDishes(buildOrderDishes(orderDetailList));
+        return orderVO;
+    }
+
+    @Override
+    public OrderStatisticsVO statistics() {
+        OrderStatisticsVO orderStatisticsVO = new OrderStatisticsVO();
+        orderStatisticsVO.setToBeConfirmed(orderMapper.countStatus(Orders.TO_BE_CONFIRMED));
+        orderStatisticsVO.setConfirmed(orderMapper.countStatus(Orders.CONFIRMED));
+        orderStatisticsVO.setDeliveryInProgress(orderMapper.countStatus(Orders.DELIVERY_IN_PROGRESS));
+        return orderStatisticsVO;
+    }
+
+    @Override
+    public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
+        Orders ordersDB = checkOrderExists(ordersConfirmDTO.getId());
+        if (!Orders.TO_BE_CONFIRMED.equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException("订单状态错误");
+        }
+
+        Orders orders = Orders.builder()
+                .id(ordersConfirmDTO.getId())
+                .status(Orders.CONFIRMED)
+                .build();
+        orderMapper.update(orders);
+    }
+
+    @Override
+    public void rejection(OrdersRejectionDTO ordersRejectionDTO) {
+        Orders ordersDB = checkOrderExists(ordersRejectionDTO.getId());
+        if (!Orders.TO_BE_CONFIRMED.equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException("订单状态错误");
+        }
+
+        Orders orders = Orders.builder()
+                .id(ordersRejectionDTO.getId())
+                .status(Orders.CANCELLED)
+                .rejectionReason(ordersRejectionDTO.getRejectionReason())
+                .cancelTime(LocalDateTime.now())
+                .payStatus(Orders.REFUND)
+                .build();
+        orderMapper.update(orders);
+    }
+
+    @Override
+    public void cancel(OrdersCancelDTO ordersCancelDTO) {
+        checkOrderExists(ordersCancelDTO.getId());
+
+        Orders orders = Orders.builder()
+                .id(ordersCancelDTO.getId())
+                .status(Orders.CANCELLED)
+                .cancelReason(ordersCancelDTO.getCancelReason())
+                .cancelTime(LocalDateTime.now())
+                .payStatus(Orders.REFUND)
+                .build();
+        orderMapper.update(orders);
+    }
+
+    @Override
+    public void delivery(Long id) {
+        Orders ordersDB = checkOrderExists(id);
+        if (!Orders.CONFIRMED.equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException("订单状态错误");
+        }
+
+        Orders orders = Orders.builder()
+                .id(id)
+                .status(Orders.DELIVERY_IN_PROGRESS)
+                .build();
+        orderMapper.update(orders);
+    }
+
+    @Override
+    public void complete(Long id) {
+        Orders ordersDB = checkOrderExists(id);
+        if (!Orders.DELIVERY_IN_PROGRESS.equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException("订单状态错误");
+        }
+
+        Orders orders = Orders.builder()
+                .id(id)
+                .status(Orders.COMPLETED)
+                .deliveryTime(LocalDateTime.now())
+                .build();
+        orderMapper.update(orders);
+    }
+
+    @Override
+    public void reminder(Long id) {
+        Orders ordersDB = checkOrderExists(id);
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("type", 2);
+        jsonObject.put("orderId", id);
+        jsonObject.put("content", "order reminder: " + ordersDB.getNumber());
+
+        webSocketServer.sendToAllClient(jsonObject.toJSONString());
+    }
+
     private BigDecimal calculateGoodsAmount(List<ShoppingCart> shoppingCartList) {
         BigDecimal goodsAmount = BigDecimal.ZERO;
         for (ShoppingCart shoppingCart : shoppingCartList) {
@@ -282,5 +424,28 @@ public class OrderServiceImpl implements OrderService {
             orderDetailList.add(orderDetail);
         }
         return orderDetailList;
+    }
+
+    private String buildOrderDishes(List<OrderDetail> orderDetailList) {
+        if (orderDetailList == null || orderDetailList.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder builder = new StringBuilder();
+        for (OrderDetail orderDetail : orderDetailList) {
+            builder.append(orderDetail.getName())
+                    .append("*")
+                    .append(orderDetail.getNumber())
+                    .append(";");
+        }
+        return builder.toString();
+    }
+
+    private Orders checkOrderExists(Long id) {
+        Orders orders = orderMapper.getById(id);
+        if (orders == null) {
+            throw new OrderBusinessException("订单不存在");
+        }
+        return orders;
     }
 }

@@ -26,6 +26,12 @@ public interface DishMapper {
     Integer countByCategoryId(Long categoryId);
 
     /**
+     * 根据状态统计菜品数量。
+     */
+    @Select("select count(id) from dish where status = #{status}")
+    Integer countByStatus(Integer status);
+
+    /**
      * 插入菜品主表
      *
      * @param dish

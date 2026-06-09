@@ -9,6 +9,8 @@ import com.sky.vo.OrderSubmitVO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -56,5 +58,17 @@ public class OrderController {
 
         log.info("生成微信预支付交易单成功，结果：{}", orderPaymentVO);
         return Result.success(orderPaymentVO);
+    }
+    /**
+     * User sends an order reminder.
+     */
+    @ApiOperation("用户催单")
+    @GetMapping("/reminder/{id}")
+    public Result reminder(@PathVariable Long id) {
+        log.info("user reminder order, id: {}", id);
+
+        orderService.reminder(id);
+
+        return Result.success();
     }
 }
