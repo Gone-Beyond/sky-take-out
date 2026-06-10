@@ -11,4 +11,24 @@
              #{od.number}, #{od.amount}, #{od.image})
         </foreach>
     </insert>
+
+    <select id="getSalesTop10" resultType="com.sky.dto.GoodsSalesDTO">
+        select od.name, sum(od.number) number
+        from order_detail od
+                 inner join orders o on od.order_id = o.id
+        <where>
+            <if test="begin != null">
+                and o.order_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                and o.order_time &lt;= #{end}
+            </if>
+            <if test="status != null">
+                and o.status = #{status}
+            </if>
+        </where>
+        group by od.name
+        order by number desc
+        limit 10
+    </select>
 </mapper>

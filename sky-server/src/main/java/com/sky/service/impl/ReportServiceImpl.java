@@ -1,15 +1,25 @@
 package com.sky.service.impl;
 
 import com.sky.entity.Orders;
+import com.sky.dto.GoodsSalesDTO;
+import com.sky.mapper.OrderDetailMapper;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
-import com.sky.vo.OrderReportVO;
-import com.sky.vo.TurnoverReportVO;
-import com.sky.vo.UserReportVO;
+import com.sky.vo.*;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -23,10 +33,12 @@ public class ReportServiceImpl implements ReportService {
 
     private final OrderMapper orderMapper;
     private final UserMapper userMapper;
+    private final OrderDetailMapper orderDetailMapper;
 
-    public ReportServiceImpl(OrderMapper orderMapper, UserMapper userMapper) {
+    public ReportServiceImpl(OrderMapper orderMapper, UserMapper userMapper, OrderDetailMapper orderDetailMapper) {
         this.orderMapper = orderMapper;
         this.userMapper = userMapper;
+        this.orderDetailMapper = orderDetailMapper;
     }
 
     @Override
@@ -162,6 +174,141 @@ public class ReportServiceImpl implements ReportService {
                 .orderCompletionRate(orderCompletionRate)
                 .build();
     }
+
+    @Override
+    public SalesTop10ReportVO getSalesTop10(LocalDate begin, LocalDate end) {
+        LocalDateTime beginTime = LocalDateTime.of(begin, LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.of(end, LocalTime.MAX);
+
+        List<GoodsSalesDTO> salesTop10 = orderDetailMapper.getSalesTop10(beginTime, endTime, Orders.COMPLETED);
+
+        List<String> nameList = new ArrayList<>();
+        List<String> numberList = new ArrayList<>();
+
+        for (GoodsSalesDTO goodsSalesDTO : salesTop10) {
+            nameList.add(goodsSalesDTO.getName());
+            numberList.add(goodsSalesDTO.getNumber().toString());
+        }
+
+        return SalesTop10ReportVO.builder()
+                .nameList(String.join(",", nameList))
+                .numberList(String.join(",", numberList))
+                .build();
+    }
+
+    @Override
+    public void exportBusinessData(HttpServletResponse response) {
+        LocalDate endDate = LocalDate.now().minusDays(1);
+        LocalDate beginDate = endDate.minusDays(29);
+
+        LocalDateTime beginTime = LocalDateTime.of(beginDate, LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.of(endDate, LocalTime.MAX);
+
+        BusinessDataVO businessDataVO = getBusinessData(beginTime, endTime);
+
+        ClassPathResource resource = new ClassPathResource("template/运营数据报表模板.xlsx");
+
+        try (InputStream inputStream = resource.getInputStream();
+             XSSFWorkbook excel = new XSSFWorkbook(inputStream)) {
+
+            Sheet sheet = excel.getSheetAt(0);
+
+            getCell(sheet, 1, 1).setCellValue("时间：" + beginDate + "至" + endDate);
+
+            getCell(sheet, 3, 2).setCellValue(businessDataVO.getTurnover());
+            getCell(sheet, 3, 4).setCellValue(businessDataVO.getOrderCompletionRate());
+            getCell(sheet, 3, 6).setCellValue(businessDataVO.getNewUsers());
+
+            getCell(sheet, 4, 2).setCellValue(businessDataVO.getValidOrderCount());
+            getCell(sheet, 4, 4).setCellValue(businessDataVO.getUnitPrice());
+
+            for (int i = 0; i < 30; i++) {
+                LocalDate date = beginDate.plusDays(i);
+
+                LocalDateTime dayBeginTime = LocalDateTime.of(date, LocalTime.MIN);
+                LocalDateTime dayEndTime = LocalDateTime.of(date, LocalTime.MAX);
+
+                BusinessDataVO dailyBusinessData = getBusinessData(dayBeginTime, dayEndTime);
+
+                int rowIndex = 7 + i;
+
+                getCell(sheet, rowIndex, 1).setCellValue(date.toString());
+                getCell(sheet, rowIndex, 2).setCellValue(dailyBusinessData.getTurnover());
+                getCell(sheet, rowIndex, 3).setCellValue(dailyBusinessData.getValidOrderCount());
+                getCell(sheet, rowIndex, 4).setCellValue(dailyBusinessData.getOrderCompletionRate());
+                getCell(sheet, rowIndex, 5).setCellValue(dailyBusinessData.getUnitPrice());
+                getCell(sheet, rowIndex, 6).setCellValue(dailyBusinessData.getNewUsers());
+            }
+
+            String fileName = URLEncoder.encode("运营数据报表.xlsx", StandardCharsets.UTF_8);
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + fileName);
+
+            excel.write(response.getOutputStream());
+        } catch (IOException e) {
+            throw new RuntimeException("导出运营数据报表失败", e);
+        }
+    }
+
+    private BusinessDataVO getBusinessData(LocalDateTime begin, LocalDateTime end) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("begin", begin);
+        map.put("end", end);
+
+        Integer totalOrderCount = orderMapper.countByMap(map);
+
+        map.put("status", Orders.COMPLETED);
+        Integer validOrderCount = orderMapper.countByMap(map);
+
+        BigDecimal turnoverAmount = orderMapper.sumAmountByTimeAndStatus(begin, end, Orders.COMPLETED);
+
+        Integer newUsers = userMapper.countByCreateTime(begin, end);
+
+        double turnover = turnoverAmount == null ? 0.0 : turnoverAmount.doubleValue();
+        double orderCompletionRate = calculateRate(validOrderCount, totalOrderCount);
+        double unitPrice = calculateUnitPrice(turnoverAmount, validOrderCount);
+
+        return BusinessDataVO.builder()
+                .turnover(turnover)
+                .validOrderCount(validOrderCount)
+                .orderCompletionRate(orderCompletionRate)
+                .unitPrice(unitPrice)
+                .newUsers(newUsers)
+                .build();
+    }
+    private double calculateRate(Integer numerator, Integer denominator) {
+        if (numerator == null || denominator == null || denominator == 0) {
+            return 0.0;
+        }
+
+        return BigDecimal.valueOf(numerator)
+                .divide(BigDecimal.valueOf(denominator), 2, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    private double calculateUnitPrice(BigDecimal turnover, Integer validOrderCount) {
+        if (turnover == null || validOrderCount == null || validOrderCount == 0) {
+            return 0.0;
+        }
+
+        return turnover
+                .divide(BigDecimal.valueOf(validOrderCount), 2, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    private Cell getCell(Sheet sheet, int rowIndex, int cellIndex) {
+        if (sheet.getRow(rowIndex) == null) {
+            sheet.createRow(rowIndex);
+        }
+
+        if (sheet.getRow(rowIndex).getCell(cellIndex) == null) {
+            sheet.getRow(rowIndex).createCell(cellIndex);
+        }
+
+        return sheet.getRow(rowIndex).getCell(cellIndex);
+    }
+
 
 
 }
